@@ -10,6 +10,10 @@ let socket ;
 const Chat = ({location}) => {
     const [name, setName] = useState('');
     const [room, setRoom] = useState('');
+    //array of message
+    const [messages, setMessages] = useState([]);
+    //for every single message
+    const [message, setMessage] = useState('');
     const ENDPOINT = 'localhost:5000';
 
     //useEffect is smilar to componentDidMount and compnentDidUpdate
@@ -20,8 +24,10 @@ const Chat = ({location}) => {
         setName(name);
         setRoom(room)
 
-        socket.emit('join', {name, room}, ({error}) => {
-            alert(error);
+        socket.emit('join', {name, room}, (error) => {
+            if(error) {
+                alert(error);
+            }
         })
 
         return () => {
@@ -31,11 +37,36 @@ const Chat = ({location}) => {
         
     // passing array, will only effect when the value of the element in the array change
     }, [ENDPOINT, location.search])
+
+    useEffect(() => {
+        socket.on('message', (message) => {
+            setMessages([...messages, message])
+        })
+    }, [messages])
+
+    //function for sending message
+    const sendMessage = (event) => {
+
+        //this will prevent from whole page refresh on keypress
+        //event.preventDefault();
+
+        if(message) {
+            socket.emit('sendMessage', message, () => setMessage('') );
+        }
+    }
+
+    console.log(message, messages)
+
     return(
-        <div>
-            <p>
-                chat
-            </p>
+        <div className="outerContainer">
+            <div className="container">
+                <input 
+                    value={message}
+                    onChange={(event) => setMessage(event.target.value)}
+                    onKeyPress={event => event.key === 'Enter' ? sendMessage(event) : null}
+                />
+                 <button className="sendButton" onClick={e => sendMessage(e)}>Send</button>
+            </div>
         </div>
     )
 }

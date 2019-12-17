@@ -1,6 +1,8 @@
 const express = require('express');
 const socketio = require('socket.io');
 
+const { addUser, removeUser, getUser, getUsersInRoom } = require('./users.js')
+
 const http = require('http');
 
 //Port to be used
@@ -20,12 +22,29 @@ io.on('connection', (socket) => {
     console.log('we have a new connection');
 
     socket.on('join', ({name, room}, callback) => {
-        console.log(room, name)
-        //callback is used for error handle
-        const error = false
+        const {error, user } = addUser({id: socket.id, name, room})
+        
         if(error) {
-            callback({ error: 'error'})
+            return callback(error)
         }
+        //send the first default message to the user;
+        socket.emit('message', {user: 'admin', text: `${user.name}, welcome to the room ${user.room}`});
+        //send message to all the user except the current user
+        socket.broadcast.to(user.room).emit('message', {user: 'admin', text: `${user.name} has joined !`})
+
+        socket.join(user.room);
+
+        callback();
+    })
+
+    //listing for the message from the user and then  send in to that chat room
+    socket.emit('sendMessage', (message, callback) => {
+        console.log(message)
+        const user = getUser(socket.id);
+
+        io.to(user.room).emit('message', {user: user.name, text: message})
+
+        callback();
     })
 
     socket.on('disconect', () => {
