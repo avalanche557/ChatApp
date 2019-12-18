@@ -3,6 +3,9 @@ import  queryString from 'query-string';
 import io from 'socket.io-client';
 
 import './chat.css';
+import InforBar from '../infoBar/infoBar';
+import Input from '../input/input';
+import Messages from '../messages/messages';
 
 let socket ;
 
@@ -14,7 +17,7 @@ const Chat = ({location}) => {
     const [messages, setMessages] = useState([]);
     //for every single message
     const [message, setMessage] = useState('');
-    const ENDPOINT = 'localhost:5000';
+    const ENDPOINT = 'https://react-chat-app-abhinav.herokuapp.com/';
 
     //useEffect is smilar to componentDidMount and compnentDidUpdate
     useEffect(() => {
@@ -30,10 +33,10 @@ const Chat = ({location}) => {
             }
         })
 
-        return () => {
-            socket.emit('disconect');
-            socket.off();
-        }
+        // return () => {
+        //     socket.emit('disconect');
+        //     socket.off();
+        // }
         
     // passing array, will only effect when the value of the element in the array change
     }, [ENDPOINT, location.search])
@@ -48,7 +51,7 @@ const Chat = ({location}) => {
     const sendMessage = (event) => {
 
         //this will prevent from whole page refresh on keypress
-        //event.preventDefault();
+        event.preventDefault();
 
         if(message) {
             socket.emit('sendMessage', message, () => setMessage('') );
@@ -60,12 +63,14 @@ const Chat = ({location}) => {
     return(
         <div className="outerContainer">
             <div className="container">
-                <input 
+                <InforBar room={room}/>
+                <Messages messages={messages} name={name} />
+                <Input message={message} sendMessage={sendMessage} setMessage={setMessage}/>
+                {/* <input 
                     value={message}
                     onChange={(event) => setMessage(event.target.value)}
                     onKeyPress={event => event.key === 'Enter' ? sendMessage(event) : null}
-                />
-                 <button className="sendButton" onClick={e => sendMessage(e)}>Send</button>
+                /> */}
             </div>
         </div>
     )

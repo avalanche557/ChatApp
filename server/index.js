@@ -1,5 +1,6 @@
 const express = require('express');
 const socketio = require('socket.io');
+const cors = require('cors');
 
 const { addUser, removeUser, getUser, getUsersInRoom } = require('./users.js')
 
@@ -23,7 +24,6 @@ io.on('connection', (socket) => {
 
     socket.on('join', ({name, room}, callback) => {
         const {error, user } = addUser({id: socket.id, name, room})
-        
         if(error) {
             return callback(error)
         }
@@ -34,26 +34,36 @@ io.on('connection', (socket) => {
 
         socket.join(user.room);
 
+        io.to(user.room).emit('roomData' ,{room: user.room, users: getUsersInRoom(user.room)})
+
         callback();
     })
 
     //listing for the message from the user and then  send in to that chat room
-    socket.emit('sendMessage', (message, callback) => {
-        console.log(message)
+    socket.on('sendMessage', (message, callback) => {
+        console.log('sendMessage')
         const user = getUser(socket.id);
 
         io.to(user.room).emit('message', {user: user.name, text: message})
+        io.to(user.room).emit('roomData', {room: user.room, users: getUsersInRoom(user.room)})
+
 
         callback();
     })
 
-    socket.on('disconect', () => {
-        console.log('user has left')
+    socket.on('disconnect', () => {
+        const user = removeUser(socket.id)
+        console.log('socket', user)
+        if(user) {
+            io.to(user.room).emit('message', {user: 'admin', text:`${user.name} has left`})
+            //io.to(user.room).emit('roomData', { room: user.room, users: getUsersInRoom(user.room)});
+        }
     })
 })
 
 //use it as middleware
 app.use(router);
+app.use(cors());
 
 //create a server and run 
 server.listen(PORT, () => {
